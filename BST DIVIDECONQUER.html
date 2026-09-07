@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Search Tree — Divide &amp; Conquer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#F4F6F8;
+    --panel:#FFFFFF;
+    --panel-2:#F0F3F6;
+    --border:#DCE3E9;
+    --text:#1B2530;
+    --muted:#61707E;
+    --cyan:#0E8DA6;
+    --amber:#C97A2B;
+    --gold:#B8860F;
+    --edge:#C7D0D8;
+    --header-bg:#0B121B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+  }
+
+  header.brand{
+    background:var(--header-bg);
+    color:#EAF0F6;
+    text-align:center;
+    padding:22px 16px 20px;
+    border-bottom:3px solid var(--gold);
+  }
+  header.brand .uni{
+    font-family:'Space Grotesk',sans-serif; font-weight:700;
+    font-size:clamp(20px,3.4vw,28px); letter-spacing:.04em; text-transform:uppercase;
+  }
+  header.brand .sub{
+    font-family:'JetBrains Mono',monospace; font-weight:500;
+    font-size:clamp(13px,2vw,16px); letter-spacing:.18em; color:#E8B84B; margin-top:4px;
+  }
+
+  .app{max-width:1040px;margin:0 auto; padding:28px 18px 60px;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--cyan); margin:0 0 6px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:clamp(24px,4vw,34px);
+    margin:0 0 10px; letter-spacing:-.01em; color:var(--text);
+  }
+  .lede{color:var(--muted); font-size:15.5px; line-height:1.6; max-width:680px; margin:0 0 22px;}
+  .lede b{color:var(--text); font-weight:600;}
+
+  .pattern{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px;
+  }
+  @media(max-width:620px){.pattern{grid-template-columns:1fr;}}
+  .chip{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; position:relative; overflow:hidden; transition:border-color .3s,box-shadow .3s;
+    box-shadow:0 1px 2px rgba(20,30,40,.04);
+  }
+  .chip::before{content:"";position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--chip-color);}
+  .chip h3{
+    margin:0 0 4px; font-family:'Space Grotesk',sans-serif; font-size:15px; display:flex; align-items:center; gap:8px; color:var(--text);
+  }
+  .chip h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--chip-color);display:inline-block;}
+  .chip p{margin:0; font-size:13.5px; color:var(--muted); line-height:1.5;}
+  .chip.divide{--chip-color:var(--cyan);}
+  .chip.conquer{--chip-color:var(--amber);}
+  .chip.active{border-color:var(--chip-color); box-shadow:0 0 0 3px color-mix(in srgb, var(--chip-color) 16%, transparent);}
+
+  .scenario-line{color:var(--muted); font-size:13.5px; margin:0 0 18px; line-height:1.55; max-width:700px;}
+
+  .board{
+    display:grid; grid-template-columns:1fr 260px; gap:16px; align-items:stretch;
+  }
+  @media(max-width:760px){.board{grid-template-columns:1fr;}}
+
+  .stage-outer{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:10px; overflow-x:auto; box-shadow:0 1px 3px rgba(20,30,40,.05);
+  }
+  .stage{
+    position:relative; width:100%; min-width:600px; aspect-ratio:900/400;
+  }
+  .stage.no-anim .node, .stage.no-anim .edge{transition:none !important; animation:none !important;}
+
+  svg.edges{position:absolute; inset:0; width:100%; height:100%;}
+  .edge{stroke:var(--edge); stroke-width:2; opacity:1; transition:opacity .4s ease, stroke .3s ease, stroke-width .3s ease;}
+
+  .node{
+    position:absolute; width:120px; transform:translate(-50%,-50%) scale(1); opacity:1;
+    background:var(--panel-2); border:1.5px solid var(--border); border-radius:10px;
+    padding:8px 9px; text-align:center;
+    transition:opacity .4s ease, transform .4s ease, box-shadow .4s ease, border-color .3s ease;
+  }
+  .node.leaf{border-style:dashed; width:104px;}
+  .node .l1{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .node .l2{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted); margin-top:2px; min-height:13px;
+  }
+  .node.flash-compare{animation:pulseAmber .6s ease; border-color:var(--amber);}
+  .node.bst-path{border-color:var(--cyan); box-shadow:0 0 0 3px rgba(14,141,166,.14);}
+  .node.bst-discarded{opacity:.32; filter:grayscale(.5);}
+  .node.final{animation:pulseGold 1.3s ease-in-out infinite; border-color:var(--gold); border-width:2px;}
+  .node.final .l2{color:var(--gold); font-weight:600;}
+  .edge.bst-path{stroke:var(--cyan); stroke-width:3;}
+  .edge.bst-discarded{opacity:.25;}
+  @keyframes pulseAmber{0%{box-shadow:0 0 0 0 rgba(201,122,43,.55);}100%{box-shadow:0 0 0 14px rgba(201,122,43,0);}}
+  @keyframes pulseGold{0%,100%{box-shadow:0 0 0 0 rgba(184,134,15,.45);}50%{box-shadow:0 0 0 18px rgba(184,134,15,0);}}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:16px; display:flex; flex-direction:column; gap:14px; box-shadow:0 1px 3px rgba(20,30,40,.05);
+  }
+  .phase-tag{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:6px 10px; text-align:center;
+  }
+  .step-count{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--muted); text-align:center;}
+  .controls{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  button{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:9px; padding:9px 8px; cursor:pointer; transition:.2s;
+  }
+  button:hover{border-color:var(--cyan); color:var(--cyan);}
+  button#playBtn{grid-column:1 / -1; background:linear-gradient(135deg, rgba(14,141,166,.10), rgba(184,134,15,.10)); border-color:#C7D0D8;}
+  button#playBtn:hover{border-color:var(--gold); color:var(--gold);}
+  .hint{font-size:12px; color:var(--muted); line-height:1.5; border-top:1px solid var(--border); padding-top:12px;}
+
+  .log{
+    margin-top:16px; background:#FFFFFF; border:1px solid var(--border); border-radius:12px;
+    padding:13px 16px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--cyan);
+    min-height:44px; display:flex; align-items:center; line-height:1.5;
+    box-shadow:0 1px 3px rgba(20,30,40,.05);
+  }
+  .log::before{content:"›"; color:var(--gold); margin-right:10px; font-weight:700;}
+  .log .blink{display:inline-block; width:8px; margin-left:2px; animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  footer{margin-top:22px; font-size:13px; color:var(--muted); line-height:1.6; border-top:1px solid var(--border); padding-top:16px;}
+  footer b{color:var(--text);}
+</style>
+</head>
+<body>
+
+<header class="brand">
+  <div class="uni">Aditya University</div>
+  <div class="sub">AD&amp;AA</div>
+</header>
+
+<div class="app">
+
+
+  <h1>Divide &amp; Conquer — Binary Search Tree Lookup</h1>
+
+
+  <div class="pattern">
+    <div class="chip divide" id="chipDivide">
+      <h3><span class="dot"></span>① Divide</h3>
+      <p>Compare the target against the current node. Whichever side it can't be on gets discarded completely — the search space is cut in half.</p>
+    </div>
+    <div class="chip conquer" id="chipConquer">
+      <h3><span class="dot"></span>② Conquer</h3>
+      <p>Keep moving into the remaining half. Once the node matches the target, the search ends directly — no merging needed.</p>
+    </div>
+  </div>
+
+  <p class="scenario-line" id="scenarioLine"></p>
+
+  <div class="board">
+    <div class="stage-outer">
+      <div class="stage" id="stage">
+        <svg class="edges" id="edgesSvg" viewBox="0 0 900 400" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="nodesLayer"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phase-tag" id="phaseTag">READY</div>
+      <div class="step-count" id="stepCount">Step 0 / 3</div>
+      <div class="controls">
+        <button id="prevBtn">⏮ Prev</button>
+        <button id="nextBtn">Next ⏭</button>
+        <button id="playBtn">▶ Play</button>
+        <button id="resetBtn">↺ Reset</button>
+      </div>
+      <div class="hint">Cyan border = path taken so far. Faded boxes = the half eliminated at that step. Gold = match found.</div>
+    </div>
+  </div>
+
+  <div class="log" id="log">Ready — press <b>Play</b> or <b>Next</b> to begin.<span class="blink">▌</span></div>
+
+  
+</div>
+
+<script>
+(function(){
+  const CANVAS_W = 900, CANVAS_H = 400;
+  const TARGET = "Sita";
+  // balanced BST, alphabetical: Anu < Divya < Meena < Radha < Sita < Swathi < Uma
+  const values = {1:"Radha", 2:"Divya", 3:"Swathi", 4:"Anu", 5:"Meena", 6:"Sita", 7:"Uma"};
+
+  function level(id){ return Math.floor(Math.log2(id)); }
+  function y(id){ return 55 + level(id)*145; }
+  const xCache = {};
+  function x(id){
+    if(xCache[id]!==undefined) return xCache[id];
+    let v;
+    if(id>=4){ const step=(CANVAS_W-2*90)/3; v = 90 + (id-4)*step; }
+    else { v = (x(2*id)+x(2*id+1))/2; }
+    xCache[id]=v; return v;
+  }
+  function subtreeIds(id){
+    if(id>7) return [];
+    return [id, ...subtreeIds(2*id), ...subtreeIds(2*id+1)];
+  }
+  function findPath(target){
+    const path=[]; let id=1;
+    while(id<=7){
+      path.push(id);
+      const val=values[id];
+      if(target===val) break;
+      id = target < val ? 2*id : 2*id+1;
+    }
+    return path;
+  }
+  const PATH = findPath(TARGET);
+  const STEPS = PATH.map((id,i)=>{
+    if(i === PATH.length-1) return {type:'found', nodeId:id};
+    const val = values[id];
+    const goLeft = TARGET < val;
+    const taken = goLeft ? 2*id : 2*id+1;
+    const discarded = goLeft ? 2*id+1 : 2*id;
+    return {type:'divide', nodeId:id, taken, discarded, goLeft};
+  });
+
+  const nodesLayer = document.getElementById('nodesLayer');
+  const edgesSvg = document.getElementById('edgesSvg');
+  const stage = document.getElementById('stage');
+  const logEl = document.getElementById('log');
+  const stepCountEl = document.getElementById('stepCount');
+  const phaseTagEl = document.getElementById('phaseTag');
+  const chipDivide = document.getElementById('chipDivide');
+  const chipConquer = document.getElementById('chipConquer');
+  const scenarioLine = document.getElementById('scenarioLine');
+  scenarioLine.textContent = `Search target: "${TARGET}". Watch which half of the directory gets eliminated at every comparison.`;
+  stepCountEl.textContent = `Step 0 / ${STEPS.length}`;
+
+  let nodeEls={}, edgeEls={}, stepIndex=-1, playing=false, playTimer=null;
+
+  function build(){
+    nodesLayer.innerHTML=''; edgesSvg.innerHTML=''; nodeEls={}; edgeEls={};
+    for(let id=1; id<=7; id++){
+      const div = document.createElement('div');
+      div.className = 'node' + (id>=4 ? ' leaf' : '');
+      div.style.left = (x(id)/CANVAS_W*100)+'%';
+      div.style.top = (y(id)/CANVAS_H*100)+'%';
+      div.innerHTML = `<div class="l1">${values[id]}</div><div class="l2">${id===1?'start here':''}</div>`;
+      nodesLayer.appendChild(div);
+      nodeEls[id] = div;
+      if(id>1){
+        const parent = Math.floor(id/2);
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', x(parent)); line.setAttribute('y1', y(parent));
+        line.setAttribute('x2', x(id)); line.setAttribute('y2', y(id));
+        line.setAttribute('class','edge');
+        edgesSvg.appendChild(line);
+        edgeEls[id] = line;
+      }
+    }
+    stepIndex = -1;
+    updateStepCount();
+    setPhase(null);
+    logEl.innerHTML = `Ready — press <b>Play</b> or <b>Next</b> to search for <b>"${TARGET}"</b>.<span class="blink">▌</span>`;
+  }
+
+  function setPhase(type){
+    chipDivide.classList.toggle('active', type==='divide');
+    chipConquer.classList.toggle('active', type==='conquer');
+    phaseTagEl.textContent = type==='divide' ? 'PHASE — DIVIDE' : type==='conquer' ? 'PHASE — CONQUER' : 'READY';
+  }
+  function updateStepCount(){ stepCountEl.textContent = `Step ${Math.max(0,stepIndex+1)} / ${STEPS.length}`; }
+  function setLog(t){ logEl.innerHTML = t + '<span class="blink">▌</span>'; }
+
+  function applyStep(step){
+    nodeEls[step.nodeId].classList.add('bst-path');
+    const l2 = nodeEls[step.nodeId].querySelector('.l2');
+    if(step.type === 'divide'){
+      setPhase('divide');
+      nodeEls[step.nodeId].classList.add('flash-compare');
+      l2.textContent = `go ${step.goLeft?'left':'right'} →`;
+      subtreeIds(step.discarded).forEach(id=>{
+        nodeEls[id].classList.add('bst-discarded');
+        if(edgeEls[id]) edgeEls[id].classList.add('bst-discarded');
+      });
+      if(edgeEls[step.taken]) edgeEls[step.taken].classList.add('bst-path');
+      const val = values[step.nodeId];
+      setLog(`DIVIDE — at "${val}", "${TARGET}" comes ${step.goLeft?'before':'after'} it, so go ${step.goLeft?'LEFT':'RIGHT'} and discard the other half of the tree`);
+    } else {
+      setPhase('conquer');
+      nodeEls[step.nodeId].classList.add('final');
+      l2.textContent = 'match ✓';
+      setLog(`CONQUER — reached "${TARGET}" directly. Found in ${STEPS.length} comparisons instead of scanning all 7 names.`);
+    }
+  }
+
+  function nextStep(){
+    if(stepIndex >= STEPS.length-1){ pause(); return; }
+    stepIndex++; applyStep(STEPS[stepIndex]); updateStepCount();
+  }
+  function goToStep(target){
+    pause();
+    stage.classList.add('no-anim');
+    build();
+    for(let i=0;i<=target;i++) applyStep(STEPS[i]);
+    stepIndex = target;
+    updateStepCount();
+    stage.offsetWidth;
+    stage.classList.remove('no-anim');
+  }
+  function play(){
+    if(stepIndex >= STEPS.length-1) goToStep(-1);
+    playing = true;
+    document.getElementById('playBtn').textContent = '⏸ Pause';
+    tick();
+  }
+  function tick(){
+    if(!playing) return;
+    nextStep();
+    if(stepIndex >= STEPS.length-1){ pause(); return; }
+    playTimer = setTimeout(tick, 1600);
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(playTimer);
+    document.getElementById('playBtn').textContent = '▶ Play';
+  }
+
+  document.getElementById('nextBtn').onclick = ()=>{ pause(); nextStep(); };
+  document.getElementById('prevBtn').onclick = ()=>{ goToStep(Math.max(-1, stepIndex-1)); };
+  document.getElementById('resetBtn').onclick = ()=> goToStep(-1);
+  document.getElementById('playBtn').onclick = ()=>{ playing ? pause() : play(); };
+
+  build();
+})();
+</script>
+</body>
+</html>

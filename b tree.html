@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Attendance Report System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+    background: #f4f7fb;
+    color: #1e293b;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 100vh;
+    background: linear-gradient(180deg, #172554, #1e40af);
+    color: white;
+    padding: 25px 15px;
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.logo h2 {
+    font-size: 22px;
+}
+
+.logo p {
+    font-size: 12px;
+    opacity: .75;
+    margin-top: 5px;
+}
+
+.menu button {
+    width: 100%;
+    padding: 14px;
+    margin: 5px 0;
+    border: none;
+    background: transparent;
+    color: white;
+    text-align: left;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.menu button:hover,
+.menu button.active {
+    background: rgba(255,255,255,.18);
+}
+
+/* Main */
+.main {
+    margin-left: 250px;
+    padding: 25px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.header h1 {
+    font-size: 28px;
+}
+
+.date {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.06);
+}
+
+/* Cards */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 25px;
+}
+
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 5px 18px rgba(0,0,0,.06);
+}
+
+.card .icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.card h3 {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.card h2 {
+    margin-top: 7px;
+    font-size: 28px;
+}
+
+/* Content */
+.content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.panel {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 5px 18px rgba(0,0,0,.06);
+}
+
+.panel h2 {
+    margin-bottom: 18px;
+}
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #eff6ff;
+    color: #1e3a8a;
+    padding: 13px;
+    text-align: left;
+}
+
+td {
+    padding: 13px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+tr:hover {
+    background: #f8fafc;
+}
+
+.badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.good {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Buttons */
+.btn {
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.primary {
+    background: #2563eb;
+    color: white;
+}
+
+.success {
+    background: #16a34a;
+    color: white;
+}
+
+.danger-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.btn:hover {
+    opacity: .85;
+}
+
+/* Forms */
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+input, select {
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+}
+
+input:focus, select:focus {
+    border-color: #2563eb;
+}
+
+/* Sections */
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* Attendance */
+.attendance-buttons button {
+    margin-right: 5px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.present {
+    background: #22c55e;
+    color: white;
+}
+
+.absent {
+    background: #ef4444;
+    color: white;
+}
+
+/* Responsive */
+@media(max-width: 1000px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .main {
+        margin-left: 200px;
+    }
+
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media(max-width: 700px) {
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+    }
+
+    .main {
+        margin-left: 0;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+
+    <div class="logo">
+        <h2>📊 Attendance</h2>
+        <p>Smart Report System</p>
+    </div>
+
+    <div class="menu">
+        <button class="active" onclick="showSection('dashboard', this)">
+            🏠 Dashboard
+        </button>
+
+        <button onclick="showSection('students', this)">
+            👨‍🎓 Students
+        </button>
+
+        <button onclick="showSection('attendance', this)">
+            ✅ Attendance
+        </button>
+
+        <button onclick="showSection('reports', this)">
+            📑 Reports
+        </button>
+
+        <button onclick="showSection('alerts', this)">
+            ⚠️ Shortage Alerts
+        </button>
+    </div>
+
+</div>
+
+<!-- Main -->
+<div class="main">
+
+    <div class="header">
+        <div>
+            <h1>Attendance Dashboard</h1>
+            <p>Student attendance monitoring system</p>
+        </div>
+
+        <div class="date" id="today"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="section active">
+
+        <div class="cards">
+
+            <div class="card">
+                <div class="icon">👨‍🎓</div>
+                <h3>Total Students</h3>
+                <h2 id="totalStudents">0</h2>
+            </div>
+
+            <div class="card">
+                <div class="icon">✅</div>
+                <h3>Present Today</h3>
+                <h2 id="presentToday">0</h2>
+            </div>
+
+            <div class="card">
+                <div class="icon">❌</div>
+                <h3>Absent Today</h3>
+                <h2 id="absentToday">0</h2>
+            </div>
+
+            <div class="card">
+                <div class="icon">📈</div>
+                <h3>Average Attendance</h3>
+                <h2 id="averageAttendance">0%</h2>
+            </div>
+
+        </div>
+
+        <div class="content">
+
+            <div class="panel">
+                <h2>Attendance Overview</h2>
+                <canvas id="attendanceChart"></canvas>
+            </div>
+
+            <div class="panel">
+                <h2>Quick Summary</h2>
+
+                <p style="margin:15px 0;">
+                    📚 Total Classes:
+                    <strong id="totalClasses">0</strong>
+                </p>
+
+                <p style="margin:15px 0;">
+                    👥 Students Below 75%:
+                    <strong id="shortageCount">0</strong>
+                </p>
+
+                <p style="margin:15px 0;">
+                    📅 Current Date:
+                    <strong id="currentDate"></strong>
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Students -->
+    <section id="students" class="section">
+
+        <div class="panel">
+
+            <h2>Student Management</h2>
+
+            <div class="form-row">
+
+                <input id="rollNo"
+                       placeholder="Roll Number">
+
+                <input id="studentName"
+                       placeholder="Student Name">
+
+                <input id="branch"
+                       placeholder="Branch">
+
+                <input id="sectionName"
+                       placeholder="Section">
+
+            </div>
+
+            <button class="btn primary" onclick="addStudent()">
+                + Add Student
+            </button>
+
+            <br><br>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Branch</th>
+                            <th>Section</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="studentTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Attendance -->
+    <section id="attendance" class="section">
+
+        <div class="panel">
+
+            <h2>Mark Attendance</h2>
+
+            <div class="actions">
+
+                <input type="date" id="attendanceDate">
+
+                <select id="subject">
+                    <option>DBMS</option>
+                    <option>Artificial Intelligence</option>
+                    <option>DSA</option>
+                    <option>Software Engineering</option>
+                    <option>Cloud Computing</option>
+                </select>
+
+            </div>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="attendanceTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Reports -->
+    <section id="reports" class="section">
+
+        <div class="panel">
+
+            <h2>Attendance Report</h2>
+
+            <div class="actions">
+
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="Search student..."
+                    onkeyup="renderReport()">
+
+                <button class="btn success" onclick="downloadCSV()">
+                    ⬇ Download CSV
+                </button>
+
+            </div>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Present</th>
+                            <th>Absent</th>
+                            <th>Total</th>
+                            <th>Percentage</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="reportTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Alerts -->
+    <section id="alerts" class="section">
+
+        <div class="panel">
+
+            <h2>⚠️ Attendance Shortage Alerts</h2>
+
+            <p style="margin-bottom:20px;">
+                Students with attendance below <strong>75%</strong>
+                are displayed here.
+            </p>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Roll No</th>
+                            <th>Name</th>
+                            <th>Attendance</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="alertTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script>
+
+/* -----------------------------
+   DATA
+----------------------------- */
+
+let students = JSON.parse(
+    localStorage.getItem("students")
+) || [
+
+    {
+        roll: "25B11AI701",
+        name: "Rahul",
+        branch: "AIML",
+        section: "A"
+    },
+
+    {
+        roll: "25B11AI702",
+        name: "Priya",
+        branch: "AIML",
+        section: "A"
+    },
+
+    {
+        roll: "25B11AI703",
+        name: "Arun",
+        branch: "AIML",
+        section: "A"
+    },
+
+    {
+        roll: "25B11AI704",
+        name: "Sneha",
+        branch: "AIML",
+        section: "A"
+    }
+
+];
+
+let attendance = JSON.parse(
+    localStorage.getItem("attendance")
+) || {};
+
+
+/* -----------------------------
+   DATE
+----------------------------- */
+
+let now = new Date();
+
+let dateString = now.toISOString().split("T")[0];
+
+document.getElementById("attendanceDate").value = dateString;
+
+document.getElementById("today").innerText =
+    now.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+
+document.getElementById("currentDate").innerText =
+    now.toLocaleDateString();
+
+
+/* -----------------------------
+   NAVIGATION
+----------------------------- */
+
+function showSection(id, button) {
+
+    document.querySelectorAll(".section")
+        .forEach(section =>
+            section.classList.remove("active")
+        );
+
+    document.getElementById(id)
+        .classList.add("active");
+
+    document.querySelectorAll(".menu button")
+        .forEach(btn =>
+            btn.classList.remove("active")
+        );
+
+    button.classList.add("active");
+
+    if(id === "attendance")
+        renderAttendance();
+
+    if(id === "reports")
+        renderReport();
+
+    if(id === "alerts")
+        renderAlerts();
+}
+
+
+/* -----------------------------
+   ADD STUDENT
+----------------------------- */
+
+function addStudent() {
+
+    let roll =
+        document.getElementById("rollNo").value.trim();
+
+    let name =
+        document.getElementById("studentName").value.trim();
+
+    let branch =
+        document.getElementById("branch").value.trim();
+
+    let section =
+        document.getElementById("sectionName").value.trim();
+
+    if(!roll || !name || !branch || !section) {
+
+        alert("Please fill all fields.");
+
+        return;
+    }
+
+    if(
+        students.some(
+            student => student.roll === roll
+        )
+    ) {
+
+        alert("Roll number already exists.");
+
+        return;
+    }
+
+    students.push({
+        roll,
+        name,
+        branch,
+        section
+    });
+
+    saveData();
+
+    document.getElementById("rollNo").value = "";
+    document.getElementById("studentName").value = "";
+    document.getElementById("branch").value = "";
+    document.getElementById("sectionName").value = "";
+
+    renderStudents();
+    updateDashboard();
+
+    alert("Student added successfully!");
+}
+
+
+/* -----------------------------
+   DELETE STUDENT
+----------------------------- */
+
+function deleteStudent(index) {
+
+    if(confirm("Delete this student?")) {
+
+        students.splice(index, 1);
+
+        saveData();
+
+        renderStudents();
+
+        updateDashboard();
+    }
+}
+
+
+/* -----------------------------
+   STUDENT TABLE
+----------------------------- */
+
+function renderStudents() {
+
+    let table =
+        document.getElementById("studentTable");
+
+    table.innerHTML = "";
+
+    students.forEach((student, index) => {
+
+        table.innerHTML += `
+
+        <tr>
+
+            <td>${student.roll}</td>
+
+            <td>${student.name}</td>
+
+            <td>${student.branch}</td>
+
+            <td>${student.section}</td>
+
+            <td>
+
+                <button
+                    class="btn danger-btn"
+                    onclick="deleteStudent(${index})">
+
+                    Delete
+
+                </button>
+
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+}
+
+
+/* -----------------------------
+   MARK ATTENDANCE
+----------------------------- */
+
+function renderAttendance() {
+
+    let table =
+        document.getElementById("attendanceTable");
+
+    table.innerHTML = "";
+
+    let date =
+        document.getElementById("attendanceDate").value;
+
+    students.forEach(student => {
+
+        let key = date + "_" + student.roll;
+
+        let status =
+            attendance[key] || "Not Marked";
+
+        table.innerHTML += `
+
+        <tr>
+
+            <td>${student.roll}</td>
+
+            <td>${student.name}</td>
+
+            <td>
+
+                <div class="attendance-buttons">
+
+                    <button
+                        class="present"
+                        onclick="markAttendance(
+                            '${student.roll}',
+                            '${date}',
+                            'Present'
+                        )">
+
+                        Present
+
+                    </button>
+
+                    <button
+                        class="absent"
+                        onclick="markAttendance(
+                            '${student.roll}',
+                            '${date}',
+                            'Absent'
+                        )">
+
+                        Absent
+
+                    </button>
+
+                    <strong style="margin-left:10px">
+                        ${status}
+                    </strong>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+}
+
+
+function markAttendance(roll, date, status) {
+
+    let key = date + "_" + roll;
+
+    attendance[key] = status;
+
+    saveData();
+
+    renderAttendance();
+
+    updateDashboard();
+
+    renderReport();
+
+    renderAlerts();
+
+}
+
+
+/* -----------------------------
+   REPORT
+----------------------------- */
+
+function calculateStudent(student) {
+
+    let records = Object.keys(attendance)
+        .filter(key =>
+            key.endsWith("_" + student.roll)
+        );
+
+    let present = records.filter(
+        key => attendance[key] === "Present"
+    ).length;
+
+    let absent = records.filter(
+        key => attendance[key] === "Absent"
+    ).length;
+
+    let total = present + absent;
+
+    let percentage =
+        total === 0
+        ? 0
+        : (present / total) * 100;
+
+    return {
+        present,
+        absent,
+        total,
+        percentage
+    };
+
+}
+
+
+function renderReport() {
+
+    let table =
+        document.getElementById("reportTable");
+
+    let search =
+        document.getElementById("search")
+            ?.value
+            .toLowerCase() || "";
+
+    table.innerHTML = "";
+
+    students
+        .filter(student =>
+            student.name.toLowerCase().includes(search) ||
+            student.roll.toLowerCase().includes(search)
+        )
+        .forEach(student => {
+
+            let data =
+                calculateStudent(student);
+
+            let status =
+                data.total === 0
+                ? "No Data"
+                : data.percentage >= 75
+                    ? "Good"
+                    : "Shortage";
+
+            let badge =
+                data.percentage >= 75
+                ? "good"
+                : "danger";
+
+            table.innerHTML += `
+
+            <tr>
+
+                <td>${student.roll}</td>
+
+                <td>${student.name}</td>
+
+                <td>${data.present}</td>
+
+                <td>${data.absent}</td>
+
+                <td>${data.total}</td>
+
+                <td>
+                    <strong>
+                        ${data.percentage.toFixed(1)}%
+                    </strong>
+                </td>
+
+                <td>
+                    <span class="badge ${badge}">
+                        ${status}
+                    </span>
+                </td>
+
+            </tr>
+
+            `;
+
+        });
+
+}
+
+
+/* -----------------------------
+   SHORTAGE ALERTS
+----------------------------- */
+
+function renderAlerts() {
+
+    let table =
+        document.getElementById("alertTable");
+
+    table.innerHTML = "";
+
+    students.forEach(student => {
+
+        let data =
+            calculateStudent(student);
+
+        if(
+            data.total > 0 &&
+            data.percentage < 75
+        ) {
+
+            table.innerHTML += `
+
+            <tr>
+
+                <td>${student.roll}</td>
+
+                <td>${student.name}</td>
+
+                <td>
+                    <span class="badge danger">
+                        ${data.percentage.toFixed(1)}%
+                    </span>
+                </td>
+
+                <td>
+
+                    <button
+                        class="btn primary"
+                        onclick="alert(
+                            'Student ${student.name} needs to improve attendance.'
+                        )">
+
+                        Notify
+
+                    </button>
+
+                </td>
+
+            </tr>
+
+            `;
+
+        }
+
+    });
+
+}
+
+
+/* -----------------------------
+   DASHBOARD
+----------------------------- */
+
+function updateDashboard() {
+
+    document.getElementById("totalStudents")
+        .innerText = students.length;
+
+    let today =
+        document.getElementById("attendanceDate").value;
+
+    let present = 0;
+    let absent = 0;
+
+    students.forEach(student => {
+
+        let key =
+            today + "_" + student.roll;
+
+        if(attendance[key] === "Present")
+            present++;
+
+        if(attendance[key] === "Absent")
+            absent++;
+
+    });
+
+    document.getElementById("presentToday")
+        .innerText = present;
+
+    document.getElementById("absentToday")
+        .innerText = absent;
+
+
+    let totalPercentage = 0;
+    let count = 0;
+
+    students.forEach(student => {
+
+        let data =
+            calculateStudent(student);
+
+        if(data.total > 0) {
+
+            totalPercentage += data.percentage;
+
+            count++;
+
+        }
+
+    });
+
+    let average =
+        count === 0
+        ? 0
+        : totalPercentage / count;
+
+    document.getElementById("averageAttendance")
+        .innerText =
+        average.toFixed(1) + "%";
+
+
+    let shortage = students.filter(student => {
+
+        let data =
+            calculateStudent(student);
+
+        return data.total > 0 &&
+               data.percentage < 75;
+
+    }).length;
+
+    document.getElementById("shortageCount")
+        .innerText = shortage;
+
+
+    let totalClasses =
+        new Set(
+            Object.keys(attendance)
+                .map(key =>
+                    key.split("_")[0]
+                )
+        ).size;
+
+    document.getElementById("totalClasses")
+        .innerText = totalClasses;
+
+    updateChart(present, absent);
+
+}
+
+
+/* -----------------------------
+   CHART
+----------------------------- */
+
+let chart;
+
+function updateChart(present, absent) {
+
+    let ctx =
+        document.getElementById("attendanceChart")
+            .getContext("2d");
+
+    if(chart)
+        chart.destroy();
+
+    chart = new Chart(ctx, {
+
+        type: "doughnut",
+
+        data: {
+
+            labels: [
+                "Present Today",
+                "Absent Today"
+            ],
+
+            datasets: [{
+
+                data: [
+                    present,
+                    absent
+                ]
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            plugins: {
+
+                legend: {
+                    position: "bottom"
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
+
+/* -----------------------------
+   CSV DOWNLOAD
+----------------------------- */
+
+function downloadCSV() {
+
+    let csv =
+        "Roll No,Name,Present,Absent,Total,Percentage\n";
+
+    students.forEach(student => {
+
+        let data =
+            calculateStudent(student);
+
+        csv +=
+            `${student.roll},${student.name},${data.present},${data.absent},${data.total},${data.percentage.toFixed(1)}%\n`;
+
+    });
+
+    let blob =
+        new Blob(
+            [csv],
+            {type: "text/csv"}
+        );
+
+    let url =
+        URL.createObjectURL(blob);
+
+    let link =
+        document.createElement("a");
+
+    link.href = url;
+
+    link.download =
+        "attendance_report.csv";
+
+    link.click();
+
+    URL.revokeObjectURL(url);
+
+}
+
+
+/* -----------------------------
+   LOCAL STORAGE
+----------------------------- */
+
+function saveData() {
+
+    localStorage.setItem(
+        "students",
+        JSON.stringify(students)
+    );
+
+    localStorage.setItem(
+        "attendance",
+        JSON.stringify(attendance)
+    );
+
+}
+
+
+/* -----------------------------
+   INITIAL LOAD
+----------------------------- */
+
+renderStudents();
+
+renderAttendance();
+
+renderReport();
+
+renderAlerts();
+
+updateDashboard();
+
+</script>
+
+</body>
+</html>

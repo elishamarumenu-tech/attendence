@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Divide &amp; Conquer — Field Operations</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#F5F7FA;
+    --panel:#FFFFFF;
+    --panel-2:#F8FAFC;
+    --border:#D7DEE7;
+    --text:#17212B;
+    --muted:#667585;
+    --cyan:#168FA3;
+    --amber:#C96B16;
+    --gold:#B88300;
+    --edge:#AAB7C4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    padding:28px 18px 60px;
+  }
+  .app{max-width:1040px;margin:0 auto;}
+
+  .university-header{
+    text-align:center;
+    margin:0 0 28px;
+    padding:18px 16px 16px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow:0 4px 14px rgba(23,33,43,.06);
+  }
+  .university-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(22px,4vw,32px);
+    letter-spacing:.06em;
+    color:var(--text);
+    line-height:1.15;
+  }
+  .department-name{
+    margin-top:6px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:clamp(16px,2.5vw,21px);
+    letter-spacing:.12em;
+    color:var(--cyan);
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--cyan); margin:0 0 6px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:clamp(26px,4vw,38px);
+    margin:0 0 10px; letter-spacing:-.01em;
+  }
+  .lede{color:var(--muted); font-size:15.5px; line-height:1.6; max-width:680px; margin:0 0 22px;}
+  .lede b{color:var(--text); font-weight:600;}
+
+  .pattern{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px;
+  }
+  @media(max-width:620px){.pattern{grid-template-columns:1fr;}}
+  .chip{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:14px 16px; position:relative; overflow:hidden; transition:border-color .3s,box-shadow .3s;
+  }
+  .chip::before{content:"";position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--chip-color);}
+  .chip h3{
+    margin:0 0 4px; font-family:'Space Grotesk',sans-serif; font-size:15px; display:flex; align-items:center; gap:8px;
+  }
+  .chip h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--chip-color);display:inline-block;}
+  .chip p{margin:0; font-size:13.5px; color:var(--muted); line-height:1.5;}
+  .chip.divide{--chip-color:var(--cyan);}
+  .chip.conquer{--chip-color:var(--amber);}
+  .chip.active{border-color:var(--chip-color); box-shadow:0 0 0 3px color-mix(in srgb, var(--chip-color) 22%, transparent);}
+
+  .tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+  .tab{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px;
+    background:var(--panel-2); border:1px solid var(--border); color:var(--muted);
+    padding:10px 16px; border-radius:999px; cursor:pointer; transition:.2s;
+  }
+  .tab:hover{color:var(--text); border-color:#2dd607;}
+  .tab.active{background:linear-gradient(135deg, rgba(94,200,216,.16), rgba(232,184,75,.10)); color:var(--text); border-color:var(--cyan);}
+
+  .scenario-line{color:var(--muted); font-size:13.5px; margin:0 0 18px; line-height:1.55; max-width:700px;}
+
+  .board{
+    display:grid; grid-template-columns:1fr 260px; gap:16px; align-items:stretch;
+  }
+  @media(max-width:760px){.board{grid-template-columns:1fr;}}
+
+  .stage-outer{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:10px; overflow-x:auto;
+  }
+  .stage{
+    position:relative; width:100%; min-width:640px; aspect-ratio:900/560;
+  }
+  .stage.no-anim .node, .stage.no-anim .edge{transition:none !important; animation:none !important;}
+
+  svg.edges{position:absolute; inset:0; width:100%; height:100%;}
+  .edge{stroke:var(--edge); stroke-width:2; opacity:0; transition:opacity .5s ease .05s;}
+  .edge.visible{opacity:1;}
+
+  .node{
+    position:absolute; width:132px; transform:translate(-50%,-50%) scale(.5); opacity:0;
+    background:var(--panel-2); border:1.5px solid var(--border); border-radius:10px;
+    padding:8px 9px; text-align:center;
+    transition:opacity .45s ease, transform .45s ease, box-shadow .4s ease, border-color .3s ease;
+  }
+  .node.visible{opacity:1; transform:translate(-50%,-50%) scale(1);}
+  .node.resolved{opacity:.42; transform:translate(-50%,-50%) scale(.82);}
+  .node.leaf{border-style:dashed; width:98px; padding:7px 6px;}
+  .node.leaf .l1{font-size:11px;}
+  .node.leaf .l2{font-size:10px;}
+  .node .l1{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12.5px; color:var(--text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .node .l2{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px;
+  }
+  .node.divided{animation:pulseCyan .6s ease;}
+  .node.flash-compare{animation:pulseAmber .6s ease; border-color:var(--amber);}
+  .node.solved{border-color:var(--gold); box-shadow:0 0 0 3px rgba(69, 238, 8, 0.18);}
+  .node.solved .l2{color:var(--gold);}
+  .node.final{animation:pulseGold 1.3s ease-in-out infinite; border-color:var(--gold); border-width:2px;}
+  @keyframes pulseCyan{0%{box-shadow:0 0 0 0 rgba(94,200,216,.65);}100%{box-shadow:0 0 0 16px rgba(94,200,216,0);}}
+  @keyframes pulseAmber{0%{box-shadow:0 0 0 0 rgba(11, 232, 129, 0.7);}100%{box-shadow:0 0 0 16px rgba(242,166,90,0);}}
+  @keyframes pulseGold{0%,100%{box-shadow:0 0 0 0 rgba(28, 236, 9, 0.55);}50%{box-shadow:0 0 0 20px rgba(232,184,75,0);}}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:16px;
+    padding:16px; display:flex; flex-direction:column; gap:14px;
+  }
+  .phase-tag{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:6px 10px; text-align:center;
+  }
+  .step-count{font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--muted); text-align:center;}
+  .controls{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  button{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px;
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:9px; padding:9px 8px; cursor:pointer; transition:.2s;
+  }
+  button:hover{border-color:var(--cyan); color:var(--cyan);}
+  button#playBtn{grid-column:1 / -1; background:linear-gradient(135deg, rgba(94,200,216,.18), rgba(232,184,75,.12)); border-color:#33495c;}
+  button#playBtn:hover{border-color:var(--gold); color:var(--gold);}
+  .hint{font-size:12px; color:var(--muted); line-height:1.5; border-top:1px solid var(--border); padding-top:12px;}
+
+  .log{
+    margin-top:16px; background:#08111A; border:1px solid var(--border); border-radius:12px;
+    padding:13px 16px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--cyan);
+    min-height:44px; display:flex; align-items:center; line-height:1.5;
+  }
+  .log::before{content:"›"; color:var(--gold); margin-right:10px; font-weight:700;}
+  .log .blink{display:inline-block; width:8px; margin-left:2px; animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  footer{margin-top:22px; font-size:13px; color:var(--muted); line-height:1.6; border-top:1px solid var(--border); padding-top:16px;}
+  footer b{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="university-header">
+    <div class="university-name">ADITYA UNIVERSITY</div>
+    <div class="department-name">AD&amp;AA</div>
+  </div>
+
+  <p class="eyebrow">Algorithms field guide</p>
+  <h1>Divide &amp; Conquer</h1>
+ 
+
+  <div class="pattern">
+    <div class="chip divide" id="chipDivide">
+      <h3><span class="dot"></span>① Divide</h3>
+      
+    </div>
+    <div class="chip conquer" id="chipConquer">
+      <h3><span class="dot"></span>② Conquer &amp; Combine</h3>
+      
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-ex="alpha" id="tabAlpha">🧑‍🤝‍🧑 Operation Alpha — Tallest Recruit</button>
+    <button class="tab" data-ex="bravo" id="tabBravo">🧭 Operation Bravo — Search &amp; Rescue</button>
+  </div>
+  <p class="scenario-line" id="scenarioLine"></p>
+
+  <div class="board">
+    <div class="stage-outer">
+      <div class="stage" id="stage">
+        <svg class="edges" id="edgesSvg" viewBox="0 0 900 560" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="nodesLayer"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phase-tag" id="phaseTag">READY</div>
+      <div class="step-count" id="stepCount">Step 0 / 14</div>
+      <div class="controls">
+        <button id="prevBtn">⏮ Prev</button>
+        <button id="nextBtn">Next ⏭</button>
+        <button id="playBtn">▶ Play</button>
+        <button id="resetBtn">↺ Reset</button>
+      </div>
+      
+  </div>
+
+ 
+
+<script>
+(function(){
+  const N = 8; // leaves
+  const CANVAS_W = 900, CANVAS_H = 560, LEAF_MARGIN = 55;
+
+  const examples = {
+    alpha: {
+      title: "Operation Alpha — Tallest Recruit",
+      scenario: "8 new recruits line up for a height check. Instead of scanning all 8 one by one, the line is split in half again and again, the taller of each small pair is picked, and winners climb back up until one recruit remains.",
+      leaves: [
+        {name:"Sai",    height:158},
+        {name:"Pawan",  height:172},
+        {name:"Naidu",  height:165},
+        {name:"Charan", height:181},
+        {name:"Vamsi",  height:150},
+        {name:"Teja",   height:177},
+        {name:"Kiran",  height:169},
+        {name:"Ravi",   height:174},
+      ],
+      leafContent(l){ return {value:l.height, label:l.name, sub:l.height+" cm"}; },
+      combine(a,b){
+        const w = a.value >= b.value ? a : b;
+        return {value:w.value, label:w.label, sub:w.value+" cm"};
+      },
+      conquerLog(a,b,result){
+        return `CONQUER — compare ${a.label} (${a.sub}) vs ${b.label} (${b.sub}) → ${result.label} is taller, moves up`;
+      },
+      doneLog(result){
+        return `COMBINE COMPLETE — tallest recruit overall: ${result.label} at ${result.sub}. Found in 3 rounds, not 8 sequential checks.`;
+      }
+    },
+    bravo: {
+      title: "Operation Bravo — Search & Rescue Grid",
+      scenario: "A hiker is missing somewhere in an 8-sector forest grid. Search teams split the map in half repeatedly, each small pair of sectors reports in, and the result climbs upward until command knows exactly which sector to send help to.",
+      leaves: [
+        {name:"Sector A1", found:false},
+        {name:"Sector A2", found:false},
+        {name:"Sector B1", found:false},
+        {name:"Sector B2", found:true},
+        {name:"Sector C1", found:false},
+        {name:"Sector C2", found:false},
+        {name:"Sector D1", found:false},
+        {name:"Sector D2", found:false},
+      ],
+      leafContent(l){ return {value:l.found, label:l.name, sub: l.found ? "🧍 hiker located" : "clear"}; },
+      combine(a,b){
+        const found = a.value || b.value;
+        const source = a.value ? a : (b.value ? b : a);
+        return {value:found, label: found ? source.label : "no signal", sub: found ? "🧍 reported in "+source.label : "both clear"};
+      },
+      conquerLog(a,b,result){
+        if(a.value || b.value){
+          const who = a.value ? a.label : b.label;
+          return `CONQUER — ${a.label}: "${a.value?'FOUND':'clear'}", ${b.label}: "${b.value?'FOUND':'clear'}" → signal confirmed from ${who}, passed up`;
+        }
+        return `CONQUER — ${a.label} and ${b.label} both report clear → "not here" passed up`;
+      },
+      doneLog(result){
+        return `COMBINE COMPLETE — hiker located in ${result.label}. Rescue team dispatched directly, no need to have searched all 8 sectors in sequence.`;
+      }
+    }
+  };
+
+  // ---- generic tree geometry (same shape for every example) ----
+  function leafX(i){ const step=(CANVAS_W-2*LEAF_MARGIN)/(N-1); return LEAF_MARGIN + i*step; }
+  function nodeLevel(id){ return Math.floor(Math.log2(id)); }
+  function nodeY(id){ return 60 + nodeLevel(id)*150; }
+  const xCache = {};
+  function nodeX(id){
+    if(xCache[id]!==undefined) return xCache[id];
+    let x;
+    if(id>=N){ x = leafX(id-N); }
+    else { x = (nodeX(2*id)+nodeX(2*id+1))/2; }
+    xCache[id]=x; return x;
+  }
+  function leafRange(id){
+    if(id>=N) return [id-N, id-N];
+    const [ls] = leafRange(2*id);
+    const [,re] = leafRange(2*id+1);
+    return [ls, re];
+  }
+
+  function buildSteps(){
+    const steps=[];
+    for(let i=1;i<=N-1;i++) steps.push({type:'divide', nodeId:i});
+    for(let i=N-1;i>=1;i--) steps.push({type:'conquer', nodeId:i});
+    return steps;
+  }
+  const STEPS = buildSteps();
+
+  // ---- DOM refs ----
+  const nodesLayer = document.getElementById('nodesLayer');
+  const edgesSvg = document.getElementById('edgesSvg');
+  const stage = document.getElementById('stage');
+  const logEl = document.getElementById('log');
+  const stepCountEl = document.getElementById('stepCount');
+  const phaseTagEl = document.getElementById('phaseTag');
+  const chipDivide = document.getElementById('chipDivide');
+  const chipConquer = document.getElementById('chipConquer');
+  const scenarioLine = document.getElementById('scenarioLine');
+  const tabs = {alpha: document.getElementById('tabAlpha'), bravo: document.getElementById('tabBravo')};
+
+  let exampleKey = 'alpha';
+  let exampleData = examples[exampleKey];
+  let leafRaw, nodeEls, edgeEls, nodeContent;
+  let stepIndex = -1;
+  let playing = false;
+  let playTimer = null;
+
+  function rangeLabel(id){
+    const [s,e] = leafRange(id);
+    return s===e ? leafRaw[s].name : leafRaw[s].name+"–"+leafRaw[e].name;
+  }
+
+  function renderNodeContent(id){
+    const el = nodeEls[id];
+    const c = nodeContent[id];
+    const l1 = el.querySelector('.l1');
+    const l2 = el.querySelector('.l2');
+    if(c){ l1.textContent = c.label; l2.textContent = c.sub; }
+    else { l1.textContent = rangeLabel(id); l2.textContent = '?'; }
+  }
+
+  function initExample(key){
+    exampleKey = key;
+    exampleData = examples[key];
+    leafRaw = exampleData.leaves;
+    xCache && Object.keys(xCache).forEach(k=>delete xCache[k]);
+
+    Object.values(tabs).forEach(t=>t.classList.remove('active'));
+    tabs[key].classList.add('active');
+    scenarioLine.textContent = exampleData.scenario;
+
+    nodesLayer.innerHTML = '';
+    edgesSvg.innerHTML = '';
+    nodeEls = {}; edgeEls = {}; nodeContent = {};
+
+    const total = 2*N-1;
+    for(let id=1; id<=total; id++){
+      const isLeaf = id>=N;
+      const div = document.createElement('div');
+      div.className = 'node' + (isLeaf ? ' leaf' : '');
+      div.style.left = (nodeX(id)/CANVAS_W*100)+'%';
+      div.style.top = (nodeY(id)/CANVAS_H*100)+'%';
+      div.innerHTML = '<div class="l1"></div><div class="l2"></div>';
+      nodesLayer.appendChild(div);
+      nodeEls[id] = div;
+      nodeContent[id] = isLeaf ? exampleData.leafContent(leafRaw[id-N]) : null;
+      renderNodeContent(id);
+
+      if(id>1){
+        const parent = Math.floor(id/2);
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', nodeX(parent)); line.setAttribute('y1', nodeY(parent));
+        line.setAttribute('x2', nodeX(id));     line.setAttribute('y2', nodeY(id));
+        line.setAttribute('class','edge');
+        edgesSvg.appendChild(line);
+        edgeEls[id] = line;
+      }
+    }
+    nodeEls[1].classList.add('visible');
+    stepIndex = -1;
+    updateStepCount();
+    setPhase(null);
+    logEl.innerHTML = 'Ready — press <b>Play</b> or <b>Next</b> to begin.<span class="blink">▌</span>';
+  }
+
+  function setPhase(type){
+    chipDivide.classList.toggle('active', type==='divide');
+    chipConquer.classList.toggle('active', type==='conquer');
+    phaseTagEl.textContent = type==='divide' ? 'PHASE — DIVIDE' : type==='conquer' ? 'PHASE — CONQUER & COMBINE' : 'READY';
+  }
+
+  function updateStepCount(){
+    stepCountEl.textContent = `Step ${Math.max(0,stepIndex+1)} / ${STEPS.length}`;
+  }
+
+  function setLog(text){
+    logEl.innerHTML = text + '<span class="blink">▌</span>';
+  }
+
+  function applyStep(step){
+    const {type, nodeId} = step;
+    const c1 = 2*nodeId, c2 = 2*nodeId+1;
+
+    if(type === 'divide'){
+      nodeEls[c1].classList.add('visible');
+      nodeEls[c2].classList.add('visible');
+      edgeEls[c1].classList.add('visible');
+      edgeEls[c2].classList.add('visible');
+      nodeEls[nodeId].classList.add('divided');
+      setPhase('divide');
+      const whole = rangeLabel(nodeId), left = rangeLabel(c1), right = rangeLabel(c2);
+      setLog(`DIVIDE — split "${whole}" into "${left}" and "${right}"`);
+    } else {
+      const a = nodeContent[c1], b = nodeContent[c2];
+      nodeEls[c1].classList.add('flash-compare');
+      nodeEls[c2].classList.add('flash-compare');
+      const result = exampleData.combine(a,b);
+      nodeContent[nodeId] = result;
+      renderNodeContent(nodeId);
+      nodeEls[nodeId].classList.add('solved');
+      nodeEls[c1].classList.add('resolved');
+      nodeEls[c2].classList.add('resolved');
+      setPhase('conquer');
+      if(nodeId === 1){
+        nodeEls[1].classList.add('final');
+        setLog(exampleData.doneLog(result));
+      } else {
+        setLog(exampleData.conquerLog(a,b,result));
+      }
+    }
+  }
+
+  function nextStep(){
+    if(stepIndex >= STEPS.length-1){ pause(); return; }
+    stepIndex++;
+    applyStep(STEPS[stepIndex]);
+    updateStepCount();
+  }
+
+  function goToStep(target){
+    pause();
+    stage.classList.add('no-anim');
+    initExampleSilent();
+    for(let i=0; i<=target; i++) applyStep(STEPS[i]);
+    stepIndex = target;
+    updateStepCount();
+    // eslint-disable-next-line no-unused-expressions
+    stage.offsetWidth;
+    stage.classList.remove('no-anim');
+  }
+
+  function initExampleSilent(){
+    // rebuild DOM fresh (unrevealed) without touching tab / scenario text
+    nodesLayer.innerHTML=''; edgesSvg.innerHTML=''; nodeEls={}; edgeEls={}; nodeContent={};
+    const total = 2*N-1;
+    for(let id=1; id<=total; id++){
+      const isLeaf = id>=N;
+      const div = document.createElement('div');
+      div.className = 'node' + (isLeaf ? ' leaf' : '');
+      div.style.left = (nodeX(id)/CANVAS_W*100)+'%';
+      div.style.top = (nodeY(id)/CANVAS_H*100)+'%';
+      div.innerHTML = '<div class="l1"></div><div class="l2"></div>';
+      nodesLayer.appendChild(div);
+      nodeEls[id] = div;
+      nodeContent[id] = isLeaf ? exampleData.leafContent(leafRaw[id-N]) : null;
+      renderNodeContent(id);
+      if(id>1){
+        const parent = Math.floor(id/2);
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', nodeX(parent)); line.setAttribute('y1', nodeY(parent));
+        line.setAttribute('x2', nodeX(id));     line.setAttribute('y2', nodeY(id));
+        line.setAttribute('class','edge');
+        edgesSvg.appendChild(line);
+        edgeEls[id] = line;
+      }
+    }
+    nodeEls[1].classList.add('visible');
+    setPhase(null);
+  }
+
+  function play(){
+    if(stepIndex >= STEPS.length-1) goToStep(-1);
+    playing = true;
+    document.getElementById('playBtn').textContent = '⏸ Pause';
+    tick();
+  }
+  function tick(){
+    if(!playing) return;
+    nextStep();
+    if(stepIndex >= STEPS.length-1){ pause(); return; }
+    playTimer = setTimeout(tick, 1500);
+  }
+  function pause(){
+    playing = false;
+    clearTimeout(playTimer);
+    document.getElementById('playBtn').textContent = '▶ Play';
+  }
+
+  document.getElementById('nextBtn').onclick = ()=>{ pause(); nextStep(); };
+  document.getElementById('prevBtn').onclick = ()=>{ goToStep(Math.max(-1, stepIndex-1)); };
+  document.getElementById('resetBtn').onclick = ()=>{ goToStep(-1); logEl.innerHTML='Ready — press <b>Play</b> or <b>Next</b> to begin.<span class="blink">▌</span>'; };
+  document.getElementById('playBtn').onclick = ()=>{ playing ? pause() : play(); };
+  tabs.alpha.onclick = ()=>{ initExample('alpha'); };
+  tabs.bravo.onclick = ()=>{ initExample('bravo'); };
+
+  initExample('alpha');
+})();
+</script>
+</body>
+</html>
